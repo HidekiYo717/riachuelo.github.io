@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Riachuelo — Simulações de Empréstimo</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #c0392b;
+    --red-light: #e74c3c;
+    --red-dark: #922b21;
+    --bg: #0f0f0f;
+    --bg2: #181818;
+    --bg3: #222222;
+    --border: #2e2e2e;
+    --text: #f0f0f0;
+    --muted: #888;
+    --gold: #f0a500;
+    --gold2: #d4890a;
+    --green: #27ae60;
+    --green2: #1e8449;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, #1a0000 0%, #2d0000 40%, #1a0000 100%);
+    border-bottom: 2px solid var(--red);
+    padding: 0 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 70px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 4px 30px rgba(192,57,43,0.3);
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 4px;
+    color: #fff;
+  }
+  .logo span { color: var(--red-light); }
+  .header-sub { font-size: 11px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+
+  /* MAIN */
+  main { padding: 32px; max-width: 1400px; margin: 0 auto; }
+
+  /* TABS */
+  .tabs {
+    display: flex; gap: 4px; margin-bottom: 28px;
+    background: var(--bg2); padding: 6px; border-radius: 12px;
+    border: 1px solid var(--border); width: fit-content;
+  }
+  .tab-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 22px; border-radius: 8px;
+    border: none; cursor: pointer;
+    background: transparent; color: var(--muted);
+    transition: all .2s;
+    letter-spacing: .5px;
+  }
+  .tab-btn.active { background: var(--red); color: #fff; box-shadow: 0 2px 12px rgba(192,57,43,.4); }
+  .tab-btn:hover:not(.active) { background: var(--bg3); color: var(--text); }
+
+  /* PANELS */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* SECTION TITLE */
+  .sec-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; letter-spacing: 3px; color: var(--red-light);
+    margin-bottom: 18px;
+  }
+
+  /* CARDS ROW */
+  .cards-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px;
+    position: relative; overflow: hidden;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0;
+    width: 4px; height: 100%;
+  }
+  .card.red::before { background: var(--red); }
+  .card.gold::before { background: var(--gold); }
+  .card.green::before { background: var(--green); }
+  .card.blue::before { background: #3498db; }
+  .card-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; }
+  .card-value { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: var(--text); }
+  .card-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* FORM */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  input, select {
+    background: var(--bg2); border: 1px solid var(--border);
+    color: var(--text); padding: 11px 14px; border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    transition: border-color .2s;
+    outline: none;
+  }
+  input:focus, select:focus { border-color: var(--red); }
+  select option { background: var(--bg2); }
+
+  .btn {
+    font-family: 'DM Sans', sans-serif; font-weight: 600;
+    padding: 12px 28px; border-radius: 8px; cursor: pointer;
+    border: none; font-size: 14px; transition: all .2s;
+    letter-spacing: .5px;
+  }
+  .btn-primary { background: var(--red); color: #fff; }
+  .btn-primary:hover { background: var(--red-light); box-shadow: 0 4px 16px rgba(192,57,43,.4); }
+  .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--red); color: var(--red-light); }
+  .btn-gold { background: var(--gold); color: #000; font-weight: 700; }
+  .btn-gold:hover { background: var(--gold2); }
+  .btn-row { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; align-items: center; }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); margin-top: 20px; }
+  table { width: 100%; border-collapse: collapse; }
+  thead { background: var(--bg3); }
+  th {
+    padding: 12px 16px; text-align: left;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted);
+    font-weight: 600; white-space: nowrap;
+  }
+  td { padding: 12px 16px; font-size: 13px; border-top: 1px solid var(--border); }
+  tr:hover td { background: rgba(255,255,255,.03); }
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px;
+  }
+  .badge-sim { background: rgba(52,152,219,.2); color: #3498db; }
+  .badge-cont { background: rgba(39,174,96,.2); color: var(--green); }
+  .badge-red { background: rgba(192,57,43,.2); color: var(--red-light); }
+
+  /* RANK */
+  .rank-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 4px; }
+  .rank-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 20px;
+  }
+  .rank-card h3 { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; margin-bottom: 16px; }
+  .rank-card h3.gold { color: var(--gold); }
+  .rank-card h3.green { color: var(--green); }
+  .rank-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .rank-item:last-child { border-bottom: none; }
+  .rank-pos {
+    font-family: 'Bebas Neue', sans-serif; font-size: 22px;
+    width: 32px; text-align: center; color: var(--muted);
+  }
+  .rank-pos.p1 { color: var(--gold); }
+  .rank-pos.p2 { color: #aaa; }
+  .rank-pos.p3 { color: #cd7f32; }
+  .rank-name { flex: 1; font-weight: 500; font-size: 15px; text-transform: capitalize; }
+  .rank-bar-wrap { width: 120px; height: 6px; background: var(--bg3); border-radius: 3px; }
+  .rank-bar { height: 6px; border-radius: 3px; }
+  .bar-gold { background: var(--gold); }
+  .bar-green { background: var(--green); }
+  .rank-count { font-family: 'Bebas Neue', sans-serif; font-size: 20px; min-width: 36px; text-align: right; }
+
+  /* TIMELINE */
+  .timeline-wrap { margin-top: 4px; }
+  .cycle-row {
+    display: flex; align-items: stretch; gap: 0;
+    position: relative; margin-bottom: 0;
+  }
+  .cycle-dot {
+    display: flex; flex-direction: column; align-items: center;
+    width: 40px; flex-shrink: 0;
+  }
+  .cycle-dot .dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--red); border: 2px solid var(--red-light);
+    flex-shrink: 0; margin-top: 14px;
+    box-shadow: 0 0 8px rgba(192,57,43,.5);
+  }
+  .cycle-dot .line {
+    width: 2px; flex: 1; background: var(--border); margin-top: 4px;
+  }
+  .cycle-body {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 18px; flex: 1; margin-bottom: 12px;
+    transition: border-color .2s;
+  }
+  .cycle-body:hover { border-color: var(--red); }
+  .cycle-header { display: flex; align-items: center; gap: 12px; }
+  .cycle-date { font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: var(--red-light); letter-spacing: 1px; }
+  .cycle-resp { font-size: 12px; color: var(--muted); }
+  .cycle-stats { display: flex; gap: 16px; margin-top: 8px; font-size: 12px; }
+  .cycle-stat { color: var(--muted); }
+  .cycle-stat span { color: var(--text); font-weight: 600; }
+
+  /* UPLOAD */
+  .upload-zone {
+    border: 2px dashed var(--border); border-radius: 14px;
+    padding: 40px; text-align: center; cursor: pointer;
+    transition: all .2s; position: relative;
+    background: var(--bg2);
+  }
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--red); background: rgba(192,57,43,.05); }
+  .upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .upload-icon { font-size: 36px; margin-bottom: 10px; }
+  .upload-zone p { color: var(--muted); font-size: 14px; }
+  .upload-zone strong { color: var(--red-light); }
+
+  /* FILTER BAR */
+  .filter-bar {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    background: var(--bg2); padding: 14px 18px; border-radius: 10px;
+    border: 1px solid var(--border); margin-bottom: 18px;
+  }
+  .filter-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+  .chip {
+    padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: 1px solid var(--border); background: var(--bg3);
+    color: var(--muted); transition: all .15s; text-transform: capitalize;
+  }
+  .chip.active { background: var(--red); border-color: var(--red); color: #fff; }
+  .chip:hover:not(.active) { border-color: var(--red); color: var(--red-light); }
+
+  /* SEARCH */
+  .search-input {
+    background: var(--bg2); border: 1px solid var(--border);
+    color: var(--text); padding: 9px 14px; border-radius: 8px;
+    font-size: 13px; font-family: 'DM Sans', sans-serif;
+    outline: none; width: 200px;
+  }
+  .search-input:focus { border-color: var(--red); }
+
+  /* DIVIDER */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+
+  /* EMPTY */
+  .empty { text-align: center; padding: 48px; color: var(--muted); font-size: 14px; }
+  .empty .icon { font-size: 40px; margin-bottom: 12px; }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 28px; right: 28px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-left: 4px solid var(--green); border-radius: 10px;
+    padding: 14px 20px; font-size: 13px; color: var(--text);
+    box-shadow: 0 8px 24px rgba(0,0,0,.5); z-index: 999;
+    transform: translateX(120%); transition: transform .3s;
+    max-width: 320px;
+  }
+  #toast.show { transform: translateX(0); }
+  #toast.error { border-left-color: var(--red); }
+
+  /* MODAL */
+  .modal-bg {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.7); z-index: 200; align-items: center; justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 16px;
+    padding: 28px; width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto;
+  }
+  .modal h2 { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: var(--red-light); margin-bottom: 20px; }
+  .modal-close { float: right; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 20px; }
+
+  @media (max-width: 768px) {
+    main { padding: 16px; }
+    .rank-grid { grid-template-columns: 1fr; }
+    header { padding: 0 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">RIACHUELO <span>CRÉDITO</span></div>
+    <div class="header-sub">Painel de Simulações de Empréstimo</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div id="file-status-badge" style="display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);padding:8px 14px;border-radius:8px;cursor:pointer" onclick="handleFileStatusClick()" title="Clique para conectar arquivo de dados">
+      <span id="file-status-dot" style="width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block"></span>
+      <span id="file-status-text" style="font-size:11px;color:var(--muted);letter-spacing:.5px">SEM ARQUIVO</span>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:12px;color:var(--muted)" id="header-date"></div>
+      <div style="font-size:11px;color:var(--red-light);letter-spacing:1px">CICLOS DE 30 DIAS</div>
+    </div>
+  </div>
+</header>
+
+<!-- MODAL BOAS VINDAS -->
+<div class="modal-bg" id="modal-welcome">
+  <div class="modal" style="max-width:480px">
+    <h2>💾 SALVAR DADOS NO COMPUTADOR</h2>
+    <p style="color:var(--muted);font-size:14px;line-height:1.7;margin-bottom:20px">
+      Para que seus dados <strong style="color:var(--text)">nunca se percam</strong>, o sistema salva tudo num arquivo <code style="color:var(--gold)">dados_riachuelo.json</code> direto no seu computador.<br><br>
+      Você escolhe onde salvar — pode ser sua área de trabalho, uma pasta de rede, ou onde quiser. O arquivo é atualizado automaticamente a cada alteração.
+    </p>
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:20px;font-size:13px;color:var(--muted);line-height:1.8">
+      ⚠️ Funciona no <strong style="color:var(--text)">Google Chrome</strong> ou <strong style="color:var(--text)">Microsoft Edge</strong> (versão recente).<br>
+      Não funciona no Firefox.
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="criarNovoArquivo()" style="flex:1">📄 Criar novo arquivo de dados</button>
+      <button class="btn btn-secondary" onclick="abrirArquivoExistente()" style="flex:1">📂 Abrir arquivo existente</button>
+    </div>
+    <div style="text-align:center;margin-top:14px">
+      <button style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline" onclick="usarSemArquivo()">Usar sem salvar no computador (dados temporários)</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('dashboard')">Dashboard</button>
+    <button class="tab-btn" onclick="switchTab('simulacoes')">Simulações</button>
+    <button class="tab-btn" onclick="switchTab('importar')">Importar Excel</button>
+    <button class="tab-btn" onclick="switchTab('ciclos')">Ciclos 30 dias</button>
+    <button class="tab-btn" onclick="switchTab('ranking')">Ranking</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="panel active" id="tab-dashboard">
+    <div class="sec-title">VISÃO GERAL</div>
+    <div class="cards-row">
+      <div class="card red">
+        <div class="card-label">Total Simulações</div>
+        <div class="card-value" id="dash-total-sim">0</div>
+        <div class="card-sub">todos os ciclos</div>
+      </div>
+      <div class="card gold">
+        <div class="card-label">Contratações</div>
+        <div class="card-value" id="dash-total-cont">0</div>
+        <div class="card-sub">convertidos</div>
+      </div>
+      <div class="card green">
+        <div class="card-label">Taxa Conversão</div>
+        <div class="card-value" id="dash-taxa-conv">0%</div>
+        <div class="card-sub">sim → contrato</div>
+      </div>
+      <div class="card blue">
+        <div class="card-label">Redução Média Taxa</div>
+        <div class="card-value" id="dash-red-media">0%</div>
+        <div class="card-sub">ofertada ao cliente</div>
+      </div>
+    </div>
+
+    <div class="sec-title">ÚLTIMAS SIMULAÇÕES</div>
+    <div class="filter-bar">
+      <span class="filter-label">Responsável:</span>
+      <span class="chip active" onclick="filterDash('todos',this)">Todos</span>
+      <span class="chip" onclick="filterDash('janio',this)">Janio</span>
+      <span class="chip" onclick="filterDash('aloisio',this)">Aloisio</span>
+      <span class="chip" onclick="filterDash('wesley',this)">Wesley</span>
+      <span class="chip" onclick="filterDash('nanda',this)">Nanda</span>
+      <span class="chip" onclick="filterDash('nathasha',this)">Nathasha</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Data</th><th>Cliente</th><th>Responsável</th>
+            <th>Valor (R$)</th><th>Taxa Original</th><th>Taxa Proposta</th><th>Redução</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="dash-table-body">
+          <tr><td colspan="9" class="empty"><div class="icon">📋</div>Nenhuma simulação ainda. Adicione na aba Simulações.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SIMULAÇÕES -->
+  <div class="panel" id="tab-simulacoes">
+    <div class="sec-title">NOVA SIMULAÇÃO</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Data da Simulação</label>
+        <input type="date" id="f-data">
+      </div>
+      <div class="form-group">
+        <label>Nome do Cliente</label>
+        <input type="text" id="f-cliente" placeholder="Ex: João da Silva">
+      </div>
+      <div class="form-group">
+        <label>CPF do Cliente</label>
+        <input type="text" id="f-cpf" placeholder="000.000.000-00" maxlength="14">
+      </div>
+      <div class="form-group">
+        <label>Responsável</label>
+        <select id="f-resp">
+          <option value="">Selecione...</option>
+          <option value="janio">Janio</option>
+          <option value="aloisio">Aloisio</option>
+          <option value="wesley">Wesley</option>
+          <option value="nanda">Nanda</option>
+          <option value="nathasha">Nathasha</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Valor do Empréstimo (R$)</label>
+        <input type="number" id="f-valor" placeholder="0,00" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Parcelas</label>
+        <select id="f-parcelas">
+          <option value="6">6x</option><option value="12">12x</option>
+          <option value="18">18x</option><option value="24">24x</option>
+          <option value="36">36x</option><option value="48">48x</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Taxa Original (% a.m.)</label>
+        <input type="number" id="f-taxa-orig" placeholder="Ex: 4.5" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Taxa Proposta (% a.m.)</label>
+        <input type="number" id="f-taxa-prop" placeholder="Ex: 3.2" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="f-status">
+          <option value="simulado">Simulado</option>
+          <option value="contratado">Contratado</option>
+          <option value="recusado">Recusado</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Observação</label>
+        <input type="text" id="f-obs" placeholder="Opcional">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="addSimulacao()">＋ Adicionar Simulação</button>
+      <button class="btn btn-secondary" onclick="limparForm()">Limpar</button>
+    </div>
+
+    <hr class="divider">
+    <div class="sec-title">LISTA DE SIMULAÇÕES</div>
+    <div class="filter-bar">
+      <span class="filter-label">Filtrar:</span>
+      <span class="chip active" onclick="filterSim('todos',this)">Todos</span>
+      <span class="chip" onclick="filterSim('janio',this)">Janio</span>
+      <span class="chip" onclick="filterSim('aloisio',this)">Aloisio</span>
+      <span class="chip" onclick="filterSim('wesley',this)">Wesley</span>
+      <span class="chip" onclick="filterSim('nanda',this)">Nanda</span>
+      <span class="chip" onclick="filterSim('nathasha',this)">Nathasha</span>
+      <input class="search-input" type="text" placeholder="Buscar cliente..." oninput="searchSim(this.value)" style="margin-left:auto">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Data</th><th>Cliente</th><th>CPF</th><th>Responsável</th>
+            <th>Valor</th><th>Parcelas</th><th>Taxa Orig.</th><th>Taxa Prop.</th><th>Redução</th><th>Status</th><th>Ação</th>
+          </tr>
+        </thead>
+        <tbody id="sim-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- IMPORTAR EXCEL -->
+  <div class="panel" id="tab-importar">
+    <div class="sec-title">IMPORTAR BASE DE DADOS (EXCEL)</div>
+    <p style="color:var(--muted);font-size:14px;margin-bottom:20px">
+      Importe arquivos <strong style="color:var(--text)">.xlsx / .xls</strong> com sua base de clientes e simulações.<br>
+      O sistema reconhece colunas: <code style="color:var(--gold)">data, cliente, cpf, responsavel, valor, parcelas, taxa_original, taxa_proposta, status, observacao</code>
+    </p>
+
+    <div class="upload-zone" id="upload-zone" ondragover="dragOver(event)" ondragleave="dragLeave()" ondrop="dropFile(event)">
+      <input type="file" accept=".xlsx,.xls,.csv" onchange="handleFile(this.files[0])">
+      <div class="upload-icon">📂</div>
+      <p><strong>Clique para selecionar</strong> ou arraste o arquivo aqui</p>
+      <p style="margin-top:6px;font-size:12px">Suporte: .xlsx, .xls</p>
+    </div>
+
+    <div id="preview-section" style="display:none;margin-top:24px">
+      <div class="sec-title">PRÉ-VISUALIZAÇÃO</div>
+      <div id="preview-info" style="color:var(--muted);font-size:13px;margin-bottom:12px"></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr id="preview-head"></tr></thead>
+          <tbody id="preview-body"></tbody>
+        </table>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="importData()">✔ Confirmar Importação</button>
+        <button class="btn btn-secondary" onclick="cancelPreview()">Cancelar</button>
+      </div>
+    </div>
+
+    <hr class="divider">
+    <div class="sec-title">MODELO DE PLANILHA</div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:14px">Baixe o modelo para preencher corretamente:</p>
+    <button class="btn btn-gold" onclick="downloadTemplate()">⬇ Baixar Modelo Excel</button>
+  </div>
+
+  <!-- CICLOS 30 DIAS -->
+  <div class="panel" id="tab-ciclos">
+    <div class="sec-title">CICLOS DE 30 DIAS</div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:20px">Acompanhe as simulações e propostas de redução de taxa agrupadas por ciclo de 30 dias.</p>
+    <div class="cards-row" id="ciclos-cards"></div>
+    <div class="timeline-wrap" id="timeline-wrap">
+      <div class="empty"><div class="icon">🗓️</div>Adicione simulações para visualizar os ciclos.</div>
+    </div>
+  </div>
+
+  <!-- RANKING -->
+  <div class="panel" id="tab-ranking">
+    <div class="sec-title">RANKING DE RESPONSÁVEIS</div>
+    <div class="rank-grid" id="rank-grid">
+      <div class="rank-card">
+        <h3 class="gold">🏆 Mais Simulações</h3>
+        <div id="rank-sim"></div>
+      </div>
+      <div class="rank-card">
+        <h3 class="green">💰 Mais Contratações</h3>
+        <div id="rank-cont"></div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="sec-title">DETALHADO POR RESPONSÁVEL</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Responsável</th><th>Simulações</th><th>Contratações</th><th>Recusadas</th><th>Conversão</th><th>Red. Média Taxa</th></tr>
+        </thead>
+        <tbody id="rank-detail-body"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+const RESPONSAVEIS = ['janio','aloisio','wesley','nanda','nathasha'];
+let simulacoes = [];
+let pendingImport = [];
+let dashFilter = 'todos';
+let simFilter = 'todos';
+let simSearch = '';
+
+// FILE SYSTEM API
+let fileHandle = null;
+let usingFile = false;
+
+// ---- INIT ----
+document.getElementById('f-data').valueAsDate = new Date();
+document.getElementById('header-date').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+// Verificar se File System Access API está disponível
+if(window.showSaveFilePicker){
+  document.getElementById('modal-welcome').classList.add('open');
+} else {
+  // Fallback: usa localStorage
+  simulacoes = JSON.parse(localStorage.getItem('rch_simulacoes')||'[]');
+  setFileStatus('local','LocalStorage (sem persistência real)');
+  renderAll();
+}
+
+/* ---- FILE SYSTEM ---- */
+async function criarNovoArquivo(){
+  try {
+    fileHandle = await window.showSaveFilePicker({
+      suggestedName: 'dados_riachuelo.json',
+      types: [{ description: 'Arquivo de dados JSON', accept: {'application/json':['.json']} }]
+    });
+    usingFile = true;
+    document.getElementById('modal-welcome').classList.remove('open');
+    // Migrar dados do localStorage se existirem
+    const local = localStorage.getItem('rch_simulacoes');
+    if(local){ simulacoes = JSON.parse(local); }
+    await saveToFile();
+    setFileStatus('ok', fileHandle.name);
+    renderAll();
+    toast('Arquivo criado! Dados serão salvos automaticamente.');
+  } catch(e){
+    if(e.name!=='AbortError') toast('Erro ao criar arquivo.','error');
+  }
+}
+
+async function abrirArquivoExistente(){
+  try {
+    [fileHandle] = await window.showOpenFilePicker({
+      types: [{ description: 'Arquivo de dados JSON', accept: {'application/json':['.json']} }]
+    });
+    usingFile = true;
+    document.getElementById('modal-welcome').classList.remove('open');
+    await loadFromFile();
+    setFileStatus('ok', fileHandle.name);
+    renderAll();
+    toast('Arquivo carregado! '+simulacoes.length+' simulações encontradas.');
+  } catch(e){
+    if(e.name!=='AbortError') toast('Erro ao abrir arquivo.','error');
+  }
+}
+
+function usarSemArquivo(){
+  document.getElementById('modal-welcome').classList.remove('open');
+  simulacoes = JSON.parse(localStorage.getItem('rch_simulacoes')||'[]');
+  setFileStatus('warn','Temporário (sem arquivo)');
+  renderAll();
+}
+
+async function loadFromFile(){
+  try {
+    const file = await fileHandle.getFile();
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    simulacoes = Array.isArray(parsed) ? parsed : (parsed.simulacoes||[]);
+  } catch(e){
+    simulacoes = [];
+  }
+}
+
+async function saveToFile(){
+  if(!usingFile || !fileHandle) {
+    localStorage.setItem('rch_simulacoes', JSON.stringify(simulacoes));
+    return;
+  }
+  try {
+    // Verificar permissão
+    const perm = await fileHandle.queryPermission({mode:'readwrite'});
+    if(perm !== 'granted'){
+      const req = await fileHandle.requestPermission({mode:'readwrite'});
+      if(req !== 'granted'){ toast('Permissão negada para salvar.','error'); return; }
+    }
+    const writable = await fileHandle.createWritable();
+    await writable.write(JSON.stringify({simulacoes, ultimaAtualizacao: new Date().toISOString()}, null, 2));
+    await writable.close();
+    // Also backup in localStorage
+    localStorage.setItem('rch_simulacoes', JSON.stringify(simulacoes));
+    // Pulse indicator
+    pulseStatus();
+  } catch(e){
+    console.error(e);
+    toast('Erro ao salvar arquivo. Verifique permissões.','error');
+    localStorage.setItem('rch_simulacoes', JSON.stringify(simulacoes));
+  }
+}
+
+function setFileStatus(type, name){
+  const dot = document.getElementById('file-status-dot');
+  const txt = document.getElementById('file-status-text');
+  const colors = {ok:'#27ae60', warn:'#f0a500', local:'#3498db', '':'#888'};
+  dot.style.background = colors[type]||'#888';
+  txt.style.color = type==='ok'?'#27ae60':type==='warn'?'#f0a500':type==='local'?'#3498db':'#888';
+  txt.textContent = name ? '💾 '+name.replace('dados_riachuelo','riachuelo').slice(0,28) : 'SEM ARQUIVO';
+}
+
+function pulseStatus(){
+  const dot = document.getElementById('file-status-dot');
+  dot.style.transform='scale(1.8)';
+  dot.style.transition='transform .15s';
+  setTimeout(()=>{ dot.style.transform='scale(1)'; },200);
+}
+
+function handleFileStatusClick(){
+  if(!window.showSaveFilePicker){ toast('Seu navegador não suporta File System API. Use Chrome ou Edge.','error'); return; }
+  if(confirm('Trocar arquivo de dados?\n\nSalve antes de trocar para não perder dados.')){
+    document.getElementById('modal-welcome').classList.add('open');
+  }
+}
+
+// Interceptar fechamento da página
+window.addEventListener('beforeunload', (e)=>{
+  if(usingFile && simulacoes.length){
+    // Não podemos salvar async aqui, mas o localStorage já está atualizado como backup
+  }
+});
+
+function save(){ saveToFile(); }
+
+function toast(msg, type='success'){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = type==='error'?'error show':'show';
+  setTimeout(()=>t.className='',2800);
+}
+
+function switchTab(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.target.classList.add('active');
+  renderAll();
+}
+
+function fmtMoney(v){ return 'R$ '+parseFloat(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtPct(v){ return parseFloat(v||0).toFixed(2)+'%'; }
+function fmtDate(d){ if(!d) return '—'; try{ return new Date(d+'T12:00:00').toLocaleDateString('pt-BR'); }catch(e){ return d; } }
+function capitalize(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
+
+function addSimulacao(){
+  const data = document.getElementById('f-data').value;
+  const cliente = document.getElementById('f-cliente').value.trim();
+  const cpf = document.getElementById('f-cpf').value.trim();
+  const resp = document.getElementById('f-resp').value;
+  const valor = parseFloat(document.getElementById('f-valor').value);
+  const parcelas = document.getElementById('f-parcelas').value;
+  const taxaOrig = parseFloat(document.getElementById('f-taxa-orig').value);
+  const taxaProp = parseFloat(document.getElementById('f-taxa-prop').value);
+  const status = document.getElementById('f-status').value;
+  const obs = document.getElementById('f-obs').value.trim();
+
+  if(!data||!cliente||!resp||!valor||!taxaOrig||!taxaProp){
+    toast('Preencha todos os campos obrigatórios.','error'); return;
+  }
+
+  simulacoes.push({ id: Date.now(), data, cliente, cpf, resp, valor, parcelas, taxaOrig, taxaProp, status, obs });
+  save(); renderAll();
+  toast('Simulação adicionada com sucesso!');
+  limparForm();
+}
+
+function limparForm(){
+  ['f-cliente','f-cpf','f-valor','f-taxa-orig','f-taxa-prop','f-obs'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-resp').value='';
+  document.getElementById('f-status').value='simulado';
+  document.getElementById('f-parcelas').value='12';
+  document.getElementById('f-data').valueAsDate = new Date();
+}
+
+function deleteSimulacao(id){
+  if(!confirm('Remover esta simulação?')) return;
+  simulacoes = simulacoes.filter(s=>s.id!==id);
+  save(); renderAll(); toast('Removida.');
+}
+
+function renderAll(){
+  renderDash(); renderSimTable(); renderCiclos(); renderRanking();
+}
+
+/* ---- DASHBOARD ---- */
+function filterDash(f, el){
+  dashFilter = f;
+  document.querySelectorAll('#tab-dashboard .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderDash();
+}
+
+function renderDash(){
+  const data = dashFilter==='todos' ? simulacoes : simulacoes.filter(s=>s.resp===dashFilter);
+  const total = data.length;
+  const cont = data.filter(s=>s.status==='contratado').length;
+  const conv = total ? ((cont/total)*100).toFixed(1) : 0;
+  const reds = data.map(s=>((s.taxaOrig-s.taxaProp)/s.taxaOrig)*100).filter(r=>!isNaN(r));
+  const redMedia = reds.length ? (reds.reduce((a,b)=>a+b,0)/reds.length).toFixed(1) : 0;
+
+  document.getElementById('dash-total-sim').textContent = total;
+  document.getElementById('dash-total-cont').textContent = cont;
+  document.getElementById('dash-taxa-conv').textContent = conv+'%';
+  document.getElementById('dash-red-media').textContent = redMedia+'%';
+
+  const tbody = document.getElementById('dash-table-body');
+  const recent = [...data].sort((a,b)=>new Date(b.data)-new Date(a.data)).slice(0,20);
+  if(!recent.length){
+    tbody.innerHTML = '<tr><td colspan="9" class="empty"><div class="icon">📋</div>Nenhuma simulação ainda. Adicione na aba Simulações.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = recent.map((s,i)=>{
+    const red = s.taxaOrig ? (((s.taxaOrig-s.taxaProp)/s.taxaOrig)*100).toFixed(1) : '—';
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${fmtDate(s.data)}</td>
+      <td>${s.cliente}</td>
+      <td><span style="text-transform:capitalize">${s.resp}</span></td>
+      <td>${fmtMoney(s.valor)}</td>
+      <td>${fmtPct(s.taxaOrig)}</td>
+      <td>${fmtPct(s.taxaProp)}</td>
+      <td style="color:var(--green)">${red}%</td>
+      <td><span class="badge ${s.status==='contratado'?'badge-cont':s.status==='simulado'?'badge-sim':'badge-red'}">${s.status}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---- SIM TABLE ---- */
+function filterSim(f, el){
+  simFilter = f;
+  document.querySelectorAll('#tab-simulacoes .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderSimTable();
+}
+function searchSim(v){ simSearch=v.toLowerCase(); renderSimTable(); }
+
+function renderSimTable(){
+  let data = simFilter==='todos' ? simulacoes : simulacoes.filter(s=>s.resp===simFilter);
+  if(simSearch) data = data.filter(s=>s.cliente.toLowerCase().includes(simSearch)||s.cpf.includes(simSearch));
+  data = [...data].sort((a,b)=>new Date(b.data)-new Date(a.data));
+  const tbody = document.getElementById('sim-table-body');
+  if(!data.length){
+    tbody.innerHTML='<tr><td colspan="12" class="empty"><div class="icon">🔍</div>Nenhum resultado.</td></tr>'; return;
+  }
+  tbody.innerHTML = data.map((s,i)=>{
+    const red = s.taxaOrig ? (((s.taxaOrig-s.taxaProp)/s.taxaOrig)*100).toFixed(1) : '—';
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${fmtDate(s.data)}</td>
+      <td>${s.cliente}</td>
+      <td style="color:var(--muted)">${s.cpf||'—'}</td>
+      <td style="text-transform:capitalize">${s.resp}</td>
+      <td>${fmtMoney(s.valor)}</td>
+      <td>${s.parcelas}x</td>
+      <td>${fmtPct(s.taxaOrig)}</td>
+      <td>${fmtPct(s.taxaProp)}</td>
+      <td style="color:var(--green)">${red}%</td>
+      <td><span class="badge ${s.status==='contratado'?'badge-cont':s.status==='simulado'?'badge-sim':'badge-red'}">${s.status}</span></td>
+      <td><button class="btn btn-secondary" style="padding:5px 12px;font-size:11px" onclick="deleteSimulacao(${s.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---- CICLOS ---- */
+function renderCiclos(){
+  if(!simulacoes.length){
+    document.getElementById('ciclos-cards').innerHTML='';
+    document.getElementById('timeline-wrap').innerHTML='<div class="empty"><div class="icon">🗓️</div>Adicione simulações para visualizar os ciclos.</div>';
+    return;
+  }
+  const sorted = [...simulacoes].sort((a,b)=>new Date(a.data)-new Date(b.data));
+  const first = new Date(sorted[0].data+'T12:00:00');
+  const cycles = {};
+  simulacoes.forEach(s=>{
+    const d = new Date(s.data+'T12:00:00');
+    const diff = Math.floor((d-first)/(30*24*60*60*1000));
+    if(!cycles[diff]) cycles[diff]=[];
+    cycles[diff].push(s);
+  });
+
+  const keys = Object.keys(cycles).sort((a,b)=>a-b);
+  const recentKeys = keys.slice(-3);
+  document.getElementById('ciclos-cards').innerHTML = recentKeys.map(k=>{
+    const arr = cycles[k];
+    const startDate = new Date(first.getTime() + k*30*24*60*60*1000);
+    const endDate = new Date(startDate.getTime() + 30*24*60*60*1000 - 86400000);
+    const cont = arr.filter(s=>s.status==='contratado').length;
+    return `<div class="card ${k==keys[keys.length-1]?'red':'gold'}">
+      <div class="card-label">Ciclo ${parseInt(k)+1}</div>
+      <div class="card-value">${arr.length}</div>
+      <div class="card-sub">${startDate.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})} – ${endDate.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</div>
+      <div class="card-sub" style="margin-top:4px">${cont} contratado(s)</div>
+    </div>`;
+  }).join('');
+
+  const wrap = document.getElementById('timeline-wrap');
+  wrap.innerHTML = [...keys].reverse().map(k=>{
+    const arr = cycles[k];
+    const startDate = new Date(first.getTime() + k*30*24*60*60*1000);
+    const endDate = new Date(startDate.getTime() + 30*24*60*60*1000 - 86400000);
+    const cont = arr.filter(s=>s.status==='contratado').length;
+    const reds = arr.map(s=>((s.taxaOrig-s.taxaProp)/s.taxaOrig)*100).filter(r=>!isNaN(r)&&r>0);
+    const redMedia = reds.length ? (reds.reduce((a,b)=>a+b,0)/reds.length).toFixed(1) : 0;
+    const resps = [...new Set(arr.map(s=>capitalize(s.resp)))].join(', ');
+    return `<div class="cycle-row">
+      <div class="cycle-dot"><div class="dot"></div><div class="line"></div></div>
+      <div class="cycle-body">
+        <div class="cycle-header">
+          <span class="cycle-date">Ciclo ${parseInt(k)+1} — ${startDate.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'})} a ${endDate.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'})}</span>
+        </div>
+        <div class="cycle-stats">
+          <div class="cycle-stat">Simulações: <span>${arr.length}</span></div>
+          <div class="cycle-stat">Contratações: <span>${cont}</span></div>
+          <div class="cycle-stat">Red. Média: <span style="color:var(--green)">${redMedia}%</span></div>
+          <div class="cycle-stat">Responsáveis: <span>${resps||'—'}</span></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ---- RANKING ---- */
+function renderRanking(){
+  const stats = {};
+  RESPONSAVEIS.forEach(r=>{ stats[r]={sim:0,cont:0,rec:0,reds:[]}; });
+  simulacoes.forEach(s=>{
+    if(!stats[s.resp]) return;
+    stats[s.resp].sim++;
+    if(s.status==='contratado') stats[s.resp].cont++;
+    if(s.status==='recusado') stats[s.resp].rec++;
+    const rd = ((s.taxaOrig-s.taxaProp)/s.taxaOrig)*100;
+    if(!isNaN(rd)&&rd>0) stats[s.resp].reds.push(rd);
+  });
+
+  const bySim = RESPONSAVEIS.slice().sort((a,b)=>stats[b].sim-stats[a].sim);
+  const byCont = RESPONSAVEIS.slice().sort((a,b)=>stats[b].cont-stats[a].cont);
+  const maxSim = Math.max(...RESPONSAVEIS.map(r=>stats[r].sim),1);
+  const maxCont = Math.max(...RESPONSAVEIS.map(r=>stats[r].cont),1);
+  function posClass(i){ return i===0?'p1':i===1?'p2':i===2?'p3':''; }
+
+  document.getElementById('rank-sim').innerHTML = bySim.map((r,i)=>`
+    <div class="rank-item">
+      <div class="rank-pos ${posClass(i)}">${i+1}</div>
+      <div class="rank-name">${capitalize(r)}</div>
+      <div class="rank-bar-wrap"><div class="rank-bar bar-gold" style="width:${(stats[r].sim/maxSim*100)}%"></div></div>
+      <div class="rank-count" style="color:var(--gold)">${stats[r].sim}</div>
+    </div>`).join('');
+
+  document.getElementById('rank-cont').innerHTML = byCont.map((r,i)=>`
+    <div class="rank-item">
+      <div class="rank-pos ${posClass(i)}">${i+1}</div>
+      <div class="rank-name">${capitalize(r)}</div>
+      <div class="rank-bar-wrap"><div class="rank-bar bar-green" style="width:${(stats[r].cont/maxCont*100)}%"></div></div>
+      <div class="rank-count" style="color:var(--green)">${stats[r].cont}</div>
+    </div>`).join('');
+
+  document.getElementById('rank-detail-body').innerHTML = RESPONSAVEIS.map(r=>{
+    const s = stats[r];
+    const conv = s.sim ? ((s.cont/s.sim)*100).toFixed(1) : '0.0';
+    const redM = s.reds.length ? (s.reds.reduce((a,b)=>a+b,0)/s.reds.length).toFixed(1) : '0.0';
+    return `<tr>
+      <td style="font-weight:600;text-transform:capitalize">${r}</td>
+      <td>${s.sim}</td>
+      <td style="color:var(--green)">${s.cont}</td>
+      <td style="color:var(--red-light)">${s.rec}</td>
+      <td>${conv}%</td>
+      <td style="color:var(--green)">${redM}%</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---- EXCEL IMPORT ---- */
+function dragOver(e){ e.preventDefault(); document.getElementById('upload-zone').classList.add('drag'); }
+function dragLeave(){ document.getElementById('upload-zone').classList.remove('drag'); }
+function dropFile(e){ e.preventDefault(); dragLeave(); const f=e.dataTransfer.files[0]; if(f) handleFile(f); }
+
+function handleFile(file){
+  if(!file){ toast('Nenhum arquivo selecionado.','error'); return; }
+  const ext = file.name.split('.').pop().toLowerCase();
+  if(!['xlsx','xls'].includes(ext)){ toast('Use arquivos .xlsx ou .xls','error'); return; }
+  const reader = new FileReader();
+  reader.onload = e=>{
+    const wb = XLSX.read(e.target.result,{type:'array'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws,{defval:''});
+    if(!rows.length){ toast('Planilha vazia ou sem dados.','error'); return; }
+    showPreview(rows, file.name);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+const COL_MAP = {
+  'data':'data','date':'data',
+  'cliente':'cliente','client':'cliente','nome cliente':'cliente','nome_cliente':'cliente',
+  'cpf':'cpf',
+  'responsavel':'resp','responsável':'resp','resp':'resp',
+  'valor':'valor','value':'valor','valor emprestimo':'valor','valor_emprestimo':'valor',
+  'parcelas':'parcelas','installments':'parcelas',
+  'taxa_original':'taxaOrig','taxa original':'taxaOrig','taxa orig':'taxaOrig','taxa_orig':'taxaOrig',
+  'taxa_proposta':'taxaProp','taxa proposta':'taxaProp','taxa prop':'taxaProp','taxa_prop':'taxaProp',
+  'status':'status',
+  'observacao':'obs','observação':'obs','obs':'obs'
+};
+
+function normalizeRow(row){
+  const out = {};
+  Object.keys(row).forEach(k=>{
+    const mapped = COL_MAP[k.toLowerCase().trim()];
+    if(mapped) out[mapped] = row[k];
+  });
+  return out;
+}
+
+function showPreview(rows, fname){
+  pendingImport = rows;
+  document.getElementById('preview-section').style.display='block';
+  document.getElementById('preview-info').textContent = `Arquivo: ${fname} — ${rows.length} linhas encontradas`;
+  const heads = Object.keys(rows[0]);
+  document.getElementById('preview-head').innerHTML = heads.map(h=>`<th>${h}</th>`).join('');
+  document.getElementById('preview-body').innerHTML = rows.slice(0,8).map(r=>
+    `<tr>${heads.map(h=>`<td>${r[h]??''}</td>`).join('')}</tr>`
+  ).join('');
+}
+
+function importData(){
+  if(!pendingImport.length){ toast('Nada para importar.','error'); return; }
+  let count=0;
+  pendingImport.forEach(row=>{
+    const n = normalizeRow(row);
+    if(!n.cliente) return;
+    const respRaw = (n.resp||'').toLowerCase().trim();
+    const resp = RESPONSAVEIS.includes(respRaw) ? respRaw : (RESPONSAVEIS.find(r=>respRaw.includes(r))||'');
+    let dataStr = '';
+    if(n.data){
+      if(typeof n.data === 'number'){
+        const d = XLSX.SSF.parse_date_code(n.data);
+        dataStr = `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+      } else {
+        const parsed = new Date(n.data);
+        dataStr = !isNaN(parsed) ? parsed.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+      }
+    } else { dataStr = new Date().toISOString().split('T')[0]; }
+    simulacoes.push({
+      id: Date.now()+Math.random(),
+      data: dataStr,
+      cliente: String(n.cliente).trim(),
+      cpf: String(n.cpf||'').trim(),
+      resp: resp||'',
+      valor: parseFloat(n.valor||0),
+      parcelas: String(n.parcelas||12),
+      taxaOrig: parseFloat(n.taxaOrig||0),
+      taxaProp: parseFloat(n.taxaProp||0),
+      status: String(n.status||'simulado').toLowerCase().includes('cont')?'contratado':String(n.status||'simulado').toLowerCase().includes('rec')?'recusado':'simulado',
+      obs: String(n.obs||'').trim()
+    });
+    count++;
+  });
+  save(); renderAll(); cancelPreview();
+  toast(`${count} simulações importadas com sucesso!`);
+}
+
+function cancelPreview(){
+  pendingImport=[];
+  document.getElementById('preview-section').style.display='none';
+}
+
+/* ---- DOWNLOAD TEMPLATE ---- */
+function downloadTemplate(){
+  const ws_data = [
+    ['data','cliente','cpf','responsavel','valor','parcelas','taxa_original','taxa_proposta','status','observacao'],
+    ['2024-05-01','Maria Silva','123.456.789-00','janio',5000,12,4.5,3.2,'simulado','Redução aprovada'],
+    ['2024-05-03','João Souza','987.654.321-00','wesley',8000,24,5.0,3.8,'contratado',''],
+  ];
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(ws_data);
+  ws['!cols'] = ws_data[0].map(()=>({wch:18}));
+  XLSX.utils.book_append_sheet(wb,'Simulacoes',ws);
+  XLSX.writeFile(wb,'modelo_simulacoes_riachuelo.xlsx');
+}
+
+/* ---- CPF MASK ---- */
+document.getElementById('f-cpf').addEventListener('input',function(){
+  let v=this.value.replace(/\D/g,'');
+  if(v.length>3) v=v.slice(0,3)+'.'+v.slice(3);
+  if(v.length>7) v=v.slice(0,7)+'.'+v.slice(7);
+  if(v.length>11) v=v.slice(0,11)+'-'+v.slice(11);
+  this.value=v.slice(0,14);
+});
+</script>
+</body>
+</html>
